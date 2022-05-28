@@ -132,10 +132,7 @@ with open("setting.json", 'r', encoding='utf8') as out:
         if index < 50:
             print(f'[{index}] {dialog.name}')
 
-    from_channel = dialogs[int(input("Введите номер канала для парсинга: "))]
-
-    # -1001591323415
-    @client.on(events.NewMessage(from_channel))
+    @client.on(events.NewMessage(-1001591323415))
     async def handler_first(event):
         try:
             setting_base = Setting.objects.get(id=1)
