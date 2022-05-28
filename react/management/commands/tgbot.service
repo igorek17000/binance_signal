@@ -1,0 +1,16 @@
+[Unit]
+Description=Telegram Bot
+After=network.target
+
+[Service]
+User=binance_signal
+Group=user_name
+
+WorkingDirectory=/home/binance_signal/binance_signals/
+Environment="PYTHONPATH=/home/binance_signal/"
+ExecStart=/home/binance_signal/.venv/bin/python /home/binance_signal/binance_signals/bot.py
+
+[Install]
+WantedBy=multi-user.target
+
+sudo cp /home/binance_signal/binance_signals/tgbot.service /etc/systemd/system/tgbot.service
