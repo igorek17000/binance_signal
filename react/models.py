@@ -4,6 +4,8 @@ from django.db import models
 class Setting(models.Model):
     take_profit = models.FloatField()
     stop_loss = models.FloatField()
+    stop_loss_for_rearrangement = models.FloatField()
+    stop_signal = models.FloatField()
     leverage = models.IntegerField()
     balance_percent = models.FloatField()
     minimal_price = models.FloatField()
@@ -23,6 +25,20 @@ class Deal(models.Model):
     stop_loss = models.FloatField()
     take_profit = models.FloatField()
     leverage = models.IntegerField()
+    date = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Сделка - {self.id}"
+
+    class Meta:
+        verbose_name = 'Сделка'
+        verbose_name_plural = 'Сделки'
+
+
+class Current(models.Model):
+    coin = models.CharField(max_length=40)
+    type = models.CharField(max_length=40)
+    stop_loss = models.FloatField()
     date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
