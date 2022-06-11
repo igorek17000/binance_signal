@@ -1,10 +1,7 @@
-import time
-
 from binance import ThreadedWebsocketManager
 from binance.client import Client
 import os
 import django
-from asgiref.sync import sync_to_async
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "binance_signal.settings")
 django.setup()
@@ -31,7 +28,9 @@ def convert_to_dict(symbols: list):
 def main():
     symbol = 'BNBBTC'
     client_bin = Client(pub, pri)
-    stop_loss = Setting.objects.get(id=1).stop_loss
+    setting = Setting.objects.get(id=1)
+    stop_loss = setting.stop_loss_for_rearrangement
+    stop_loss_signal = setting.stop_signal
     exchange = convert_to_dict(client_bin.futures_exchange_info()['symbols'])
     twm = ThreadedWebsocketManager(api_key=pub, api_secret=pri)
     # start is required to initialise its internal loop
@@ -62,7 +61,7 @@ def main():
             for i in client_bin.futures_get_open_orders():
                 if i['type'] == 'STOP_MARKET':
                     if i['stopPrice'] not in current_symbols:
-                        current_symbols[i['symbol']] = [float(i['stopPrice']), i['orderId']]
+                        current_symbols[i['symbol']] = [float(i['stopPrice']), i['orderId'], float(i['stopPrice']), 1]
                         twm.stop()
                         new_streams = ['bnbbtc@miniTicker']
                         for current_symbol in current_symbols.keys():
@@ -77,17 +76,18 @@ def main():
                     twm.stop_socket(f"{msg['data']['s'].lower()}@miniTicker")
                 return
         try:
-            target = current_symbols[msg['data']['s']][0] / 100 * (100 + 2 * stop_loss)
+            target = current_symbols[msg['data']['s']][2] / 100 * (100 + (stop_loss_signal * current_symbols[msg['data']['s']][3]))
         except KeyError:
             return
         if float(msg['data']['c']) > target:
             print('up!!!!')
             price_precision = int(exchange[msg['data']['s']]['pricePrecision'])
-            new_stop_loss = round(current_symbols[msg['data']['s']][0] / 100 * (100 + stop_loss), price_precision)
+            new_stop_loss = round(current_symbols[msg['data']['s']][2] / 100 * (100 + (stop_loss * current_symbols[msg['data']['s']][3])), price_precision)
             print(f'{stop_loss} - stop-loss')
             create_order(msg['data']['s'], new_stop_loss)
             delete_order(msg['data']['s'], current_symbols[msg['data']['s']][1])
-            del current_symbols[msg['data']['s']]
+            current_symbols[msg['data']['s']][3] += 1
+            current_symbols[msg['data']['s']][1] = new_stop_loss
         print(msg)
 
     # multiple sockets can be started
