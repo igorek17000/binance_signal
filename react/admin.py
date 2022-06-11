@@ -4,7 +4,8 @@ from .models import Setting, Deal
 
 @admin.register(Setting)
 class SettingAdmin(admin.ModelAdmin):
-    list_display = ('status', 'take_profit', 'stop_loss', 'leverage', 'balance_percent', 'minimal_price')
+    list_display = ('status', 'take_profit', 'stop_loss', 'stop_loss_for_rearrangement', 'stop_signal',
+                    'leverage', 'balance_percent', 'minimal_price')
 
 
 @admin.register(Deal)
