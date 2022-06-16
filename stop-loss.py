@@ -4,6 +4,8 @@ import os
 import django
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "binance_signal.settings")
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'rest.settings')
+os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 django.setup()
 # your imports, e.g. Django models
 from react.models import Setting
@@ -12,6 +14,7 @@ pub = 'TmCZsJp55qJPOWgleRLsWv8VBmFq4BIBQMCy2nWQI4t48fTT7x6ums4keMXL7Azv'
 pri = 'sYMXl1urFA8TlU71BvV4JeDAcs3r89bXFou2vDVDQNhudo7hW4oNJ6QNRqUb9iCG'
 current_symbols = {}
 counter = 100
+
 
 
 def convert_to_dict(symbols: list):
@@ -25,12 +28,16 @@ def convert_to_dict(symbols: list):
     return result_dict
 
 
-def main():
-    symbol = 'BNBBTC'
-    client_bin = Client(pub, pri)
+def get_setting():
     setting = Setting.objects.get(id=1)
     stop_loss = setting.stop_loss_for_rearrangement
     stop_loss_signal = setting.stop_signal
+    return stop_loss, stop_loss_signal
+
+
+def main():
+    symbol = 'BNBBTC'
+    client_bin = Client(pub, pri)
     exchange = convert_to_dict(client_bin.futures_exchange_info()['symbols'])
     twm = ThreadedWebsocketManager(api_key=pub, api_secret=pri)
     # start is required to initialise its internal loop
@@ -76,6 +83,7 @@ def main():
                     twm.stop_socket(f"{msg['data']['s'].lower()}@miniTicker")
                 return
         try:
+            stop_loss, stop_loss_signal = get_setting()
             target = current_symbols[msg['data']['s']][2] / 100 * (100 + (stop_loss_signal * current_symbols[msg['data']['s']][3]))
         except KeyError:
             return
